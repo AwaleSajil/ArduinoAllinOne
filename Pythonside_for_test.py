@@ -56,7 +56,7 @@ class ReadFromArduino(object):
         self.millis = get_time_millis()
         self.SIZE_STRUCT = SIZE_STRUCT
         self.verbose = verbose
-        self.latest_values = -1
+        self.Data = -1
         self.t_init = get_time_millis()
         self.t = 0
 
@@ -70,13 +70,13 @@ class ReadFromArduino(object):
         while not read:
             myByte = self.port.read(1)
             if myByte.decode() == 'S':
-                data = self.port.read(self.SIZE_STRUCT)
+                packed_data = self.port.read(self.SIZE_STRUCT)
                 myByte = self.port.read(1)
                 if myByte.decode() == 'E':
                     self.t = (get_time_millis() - self.t_init) / 1000.0
 
                     # is  a valid message struct
-                    new_values = struct.unpack('<hhhh', data)
+                    unpacked_data = struct.unpack('<hhhh', packed_data)
 
                     current_time = get_time_millis()
                     time_elapsed = current_time - self.millis
@@ -84,10 +84,10 @@ class ReadFromArduino(object):
 
                     read = True
 
-                    self.latest_values = np.array(new_values)
+                    self.Data = np.array(unpacked_data)
 
-                    if self.verbose > 1:
-                        print("Time elapsed since last (ms): " + str(time_elapsed))
+                    # if self.verbose > 1:
+                        # print("Time elapsed since last (ms): " + str(time_elapsed))
 
                     return(True)
 
@@ -95,10 +95,29 @@ class ReadFromArduino(object):
 
     def print_values(self):
         print("------ ONE MORE MEASUREMENT ------")
-        print("Temperature: ", self.latest_values[0])
-        print("Angular Humidity: ", self.latest_values[1])
-        print("LDR: ", self.latest_values[2])
-        print("Ammonia: ", self.latest_values[3])
+        print("Temperature: ", self.Data[0])
+        print("Humidity: ", self.Data[1])
+        print("LDR: ", self.Data[2])
+        print("Ammonia: ", self.Data[3])
+
+
+    def getTemperature(self):
+        self.read_one_value()
+        return self.Data[0]
+
+    def getHumidity(self):
+        self.read_one_value()
+        return self.Data[1]
+
+    def getLDR(self):
+        self.read_one_value()
+        return self.Data[2]
+
+    def getAmmonia(self):
+        self.read_one_value()
+        return self.Data[3]
+
+
 
 
 
@@ -134,6 +153,21 @@ class SendtoArduino(object):
         Arduino.write(b'E')
 
 
+    def setHeater(self, Val):
+        self.Data[0] = Val
+        self.sendValue()
+
+    def setFan(self, Val):
+        self.Data[1] = Val
+        self.sendValue()
+
+    def setLight(self, Val):
+        self.Data[2] = Val
+        self.sendValue()
+
+    def setServo(self, Val):
+        self.Data[3] = Val
+        self.sendValue()
 
 # use is:
 ports = serial_ports()
@@ -143,8 +177,18 @@ read_from_Arduino_instance = ReadFromArduino(Arduino, verbose=6)
 send_to_Arduino_instance = SendtoArduino(Arduino, verbose=6)
 
 while True:
-    read_from_Arduino_instance.read_one_value()
-    read_from_Arduino_instance.print_values()
-    send_to_Arduino_instance.sendValue()
+    # read_from_Arduino_instance.read_one_value()
+    # read_from_Arduino_instance.print_values()
+    print("T:", read_from_Arduino_instance.getTemperature())
+    print("H:", read_from_Arduino_instance.getHumidity())
+    print("L:", read_from_Arduino_instance.getLDR())
+    print("A:", read_from_Arduino_instance.getAmmonia())
+    print("--------------------")
+
+    # send_to_Arduino_instance.sendValue()
+    send_to_Arduino_instance.setHeater(1)
+    send_to_Arduino_instance.setFan(2)
+    send_to_Arduino_instance.setLight(3)
+    send_to_Arduino_instance.setServo(4)
     time.sleep(0.5)
 
