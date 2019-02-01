@@ -115,7 +115,24 @@ def sendValue(Data):
     Arduino.write(packed_data)
     Arduino.write(b'E')
 
-Data = np.array([1,2,3,4])
+
+
+
+class SendtoArduino(object):
+    def __init__(self, port, SIZE_STRUCT = 4, verbose=0):
+        self.port = port
+        self.SIZE_STRUCT = SIZE_STRUCT
+        self.verbose = verbose
+        self.Data = np.array([1,2,3,4])
+
+
+
+    def sendValue(self):
+        Arduino.write(b'S')
+        packed_data = struct.pack('>BBBB',self.Data[0], self.Data[1], self.Data[2], self.Data[3])
+        Arduino.write(packed_data)
+        Arduino.write(b'E')
+
 
 
 # use is:
@@ -123,9 +140,11 @@ ports = serial_ports()
 print(ports)
 Arduino = serial.Serial(ports[0], baudrate=9600, timeout=0.5)
 read_from_Arduino_instance = ReadFromArduino(Arduino, verbose=6)
+send_to_Arduino_instance = SendtoArduino(Arduino, verbose=6)
+
 while True:
     read_from_Arduino_instance.read_one_value()
     read_from_Arduino_instance.print_values()
-    sendValue(Data)
+    send_to_Arduino_instance.sendValue()
     time.sleep(0.5)
 
