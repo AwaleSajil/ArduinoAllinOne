@@ -142,15 +142,15 @@ class SendtoArduino(object):
         self.port = port
         self.SIZE_STRUCT = SIZE_STRUCT
         self.verbose = verbose
-        self.Data = np.array([1,2,3,4])
+        self.Data = np.array([122,223,31,49])
 
 
 
     def sendValue(self):
-        Arduino.write(b'S')
+        self.port.write(b'S')
         packed_data = struct.pack('>BBBB',self.Data[0], self.Data[1], self.Data[2], self.Data[3])
-        Arduino.write(packed_data)
-        Arduino.write(b'E')
+        self.port.write(packed_data)
+        self.port.write(b'E')
 
 
     def setHeater(self, Val):
@@ -185,10 +185,10 @@ while True:
     print("A:", read_from_Arduino_instance.getAmmonia())
     print("--------------------")
 
-    # send_to_Arduino_instance.sendValue()
-    send_to_Arduino_instance.setHeater(1)
-    send_to_Arduino_instance.setFan(2)
-    send_to_Arduino_instance.setLight(3)
-    send_to_Arduino_instance.setServo(4)
+    send_to_Arduino_instance.sendValue()
+    # send_to_Arduino_instance.setHeater(1)
+    # send_to_Arduino_instance.setFan(2)
+    # send_to_Arduino_instance.setLight(3)
+    # send_to_Arduino_instance.setServo(4)
     time.sleep(0.5)
 
