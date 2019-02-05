@@ -2,16 +2,22 @@
 #include <DHT.h>
 #include <DHT_U.h>
 #include <LiquidCrystal.h>
+#include <SoftwareSerial.h>
+#include "SoftEasyTransfer.h"
+SoftwareSerial mySerial(12, 13); 
 
 
+//create object
+SoftEasyTransfer ET; 
 
-#define DHTPIN  2   // Pin which is connected to the DHT sensor
+
+#define DHTPIN  4   // will be later changed to pin 4
+#define SERVOPIN 3  //pin for servo
 #define LDRPIN A0   //CONcider it for now
-#define AMMONIAPIN A1 //concider for now
+#define AMMONIAPIN A3 //concider for now
 
 const int rs = 3, en = 4, d4 = 5, d5 = 6, d6 = 7, d7 = 8;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-
 
 
 
@@ -30,6 +36,21 @@ struct sensorData
   int Ammonia = -1;
 };
 
+//define a structure for rashik
+struct rskData
+{
+  int temperature = 100;
+  int humidity = 99;
+  int ldr = 98;
+  int ammonia = -1;
+  int heater = 0;
+  int fan = 0;
+  int lights = 0;
+  int servos = -1;
+  
+};
+
+rskData rsk1;
 
 int dataReceived[4];
 //dataReceived is an array containing
@@ -37,6 +58,7 @@ int dataReceived[4];
 //dataReceived[1]   --->  Fan
 //dataReceived[2]   --->  Lights
 //dataReceived[3]   --->  Servo
+
 
 
 
@@ -150,13 +172,33 @@ void sendSensorData() {
   return;
 }
 
+void sendDatatoRSK() {
+  ET.sendData();
+}
+
+
+void constructStruct()
+{
+  rsk1.temperature = sensorVar.Temperature;
+  rsk1.humidity = sensorVar.Humidity;
+  rsk1.ldr = sensorVar.LDR;
+  rsk1.ammonia = sensorVar.Ammonia;
+  rsk1.heater = dataReceived[0];
+  rsk1.fan = dataReceived[1];
+  rsk1.lights = dataReceived[2];
+  rsk1.servos = dataReceived[3];
+}
+
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600); 
+  mySerial.begin(9600);
 
   // Initialize DHT device
   dht.begin();
+
+  ET.begin(details(rsk1), &mySerial);
 
   //initilize lcd display
   lcd.begin(16, 2);
@@ -187,6 +229,20 @@ void loop() {
   //check for any Serialdata from the python/pi/APP... if yes update the dataReceived
   rData();
 
+
+
+  //construct a long string to send to rashik arduno
+  constructStruct();
+
+
+  //send all data to rashik's arduno
+  sendDatatoRSK();
+
+  
+
+
+
+  
 
   //display the dataReceived in the LCD for debugging
   showdataReceived();
