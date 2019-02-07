@@ -3,15 +3,23 @@
 #include <DHT_U.h>
 #include <LiquidCrystal.h>
 #include <SoftwareSerial.h>
+#include <Servo.h>
+
 #include "SoftEasyTransfer.h"
 SoftwareSerial mySerial(12, 13); 
+Servo ventilator;
 
+
+#include <Servo.h>
 
 #define DHTPIN  4   // will be later changed to pin 4
 #define SERVOPIN 3  //pin for servo
 #define LDRPIN A0   //CONcider it for now
 #define AMMONIAPIN A3 //concider for now
 
+#define BULB_PIN 11
+#define HEATER_PIN 9
+#define FAN_PIN 8
 
 //create object
 SoftEasyTransfer ET; 
@@ -56,13 +64,14 @@ struct rskData
   int distriIndex = -1;
   int mobilityIndex = -1;
   int peakCount = -1;
+  int autoState = 0;
  
 };
 
 //declare a structure for rashik transmission
 rskData rsk1;
 
-int dataReceived[7];
+int dataReceived[8];
 //dataReceived is an array containing
 //dataReceived[0]   --->  Heater
 //dataReceived[1]   --->  Fan
@@ -72,6 +81,7 @@ int dataReceived[7];
 //dataReceived[4]   --->  distribution index
 //dataReceived[5]   --->  mobility index
 //dataReceived[6]   --->  peakCount
+//dataReceived[7]   ---> autoState
 
 
 int delayForPhase1 = 1000;
@@ -102,7 +112,7 @@ void rData()
   if(Serial.available() > 0){
     if(Serial.read() == 'S')
     {
-      for (int i = 0; i< 7 ; i++)
+      for (int i = 0; i< 8 ; i++)
       {
         dataReceived[i] = Serial.read();
       }
@@ -202,6 +212,93 @@ void sendDatatoRSK() {
 }
 
 
+void lightBulb()
+{
+  if(dataReceived[7] == 1)    //state is auto 
+  {
+    if(sensorVar.LDR > 400){
+      digitalWrite(BULB_PIN, HIGH);
+    }
+    else{
+      digitalWrite(BULB_PIN, LOW);
+    }
+  }
+
+  else    //state is manual
+  {
+    if(dataReceived[2] == 1)    //set the light to on
+    {
+      digitalWrite(BULB_PIN, HIGH);
+    }
+    else{
+      digitalWrite(BULB_PIN, LOW);
+    }
+  }
+}
+
+
+//2. Ammonia_Sensor Servo Control
+void open_Ventilation(){
+      if(dataReceived[7] == 1)
+      {
+        if(sensorVar.Ammonia > 400)
+          ventilator.write(120);
+        else
+          ventilator.write(0);  
+      }
+      else
+      {
+        if(dataReceived[3] == 1)
+          ventilator.write(120);
+        else
+          ventilator.write(0);
+      }
+    }
+
+//3. Temperature Fan and Heater Control
+    void maintain_Temperature(){
+      if(dataReceived[7] == 1)
+      {
+        if(sensorVar.Temperature > 30){
+          digitalWrite(FAN_PIN, HIGH);
+          digitalWrite(HEATER_PIN, LOW);
+        }
+        else if(sensorVar.Temperature <22){
+          digitalWrite(FAN_PIN, LOW);
+          digitalWrite(HEATER_PIN, HIGH);
+        }
+        else{
+          digitalWrite(FAN_PIN, LOW);
+          digitalWrite(HEATER_PIN, LOW);
+        }
+      }
+
+      else
+      {
+        if(dataReceived[1] ==1)
+          digitalWrite(FAN_PIN, HIGH);
+        else
+          digitalWrite(FAN_PIN, LOW);
+
+        if(dataReceived[0] >50)
+          digitalWrite(HEATER_PIN, HIGH);
+        else
+          digitalWrite(HEATER_PIN, LOW);
+      }
+    }
+
+  //dataReceived is an array containing
+//dataReceived[0]   --->  Heater
+//dataReceived[1]   --->  Fan
+//dataReceived[2]   --->  Lights
+//dataReceived[3]   --->  Servo
+
+//dataReceived[4]   --->  distribution index
+//dataReceived[5]   --->  mobility index
+//dataReceived[6]   --->  peakCount
+//dataReceived[7]   ---> autoState
+
+
 void constructStruct()
 {
   rsk1.temperature = sensorVar.Temperature;
@@ -217,6 +314,7 @@ void constructStruct()
   rsk1.distriIndex = dataReceived[4];
   rsk1.mobilityIndex = dataReceived[5];
   rsk1.peakCount = dataReceived[6];
+  rsk1.autoState = dataReceived[7];
   
 }
 
@@ -264,10 +362,19 @@ void dophase1()
 //  showdataReceived();
 
   //use the dataReceived to (take actions) control the appliances // heater, fan, lights
+  lightBulb();
+  open_Ventilation();
+  maintain_Temperature();
 }
 
 
 void setup() {
+
+  //pinmode select
+  pinMode(BULB_PIN, OUTPUT);
+  pinMode(HEATER_PIN, OUTPUT);
+  pinMode(FAN_PIN, OUTPUT);
+  
   // put your setup code here, to run once:
   Serial.begin(9600); 
   mySerial.begin(9600);
@@ -280,6 +387,7 @@ void setup() {
   //initilize lcd display
 //  lcd.begin(16, 2);
 
+  
 
 }
 
