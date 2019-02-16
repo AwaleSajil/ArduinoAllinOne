@@ -5,12 +5,13 @@
 #include <SoftwareSerial.h>
 #include <Servo.h>
 
+
 #include "SoftEasyTransfer.h"
 SoftwareSerial mySerial(12, 13); 
 Servo ventilator;
 
 
-#include <Servo.h>
+
 
 #define DHTPIN  4   // will be later changed to pin 4
 #define SERVOPIN 3  //pin for servo
@@ -25,7 +26,7 @@ Servo ventilator;
 SoftEasyTransfer ET; 
 
 //create a DHT type object
-#define DHTTYPE           DHT11     // DHT 11 
+#define DHTTYPE DHT11     // DHT 11 
 
 
 
@@ -216,7 +217,7 @@ void lightBulb()
 {
   if(dataReceived[7] == 1)    //state is auto 
   {
-    if(sensorVar.LDR > 400){
+    if(sensorVar.LDR > 20){
       digitalWrite(BULB_PIN, HIGH);
     }
     else{
